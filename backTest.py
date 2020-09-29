@@ -27,6 +27,8 @@ is calculated at time t.
 @contact: Shaolun.du@gmail.com
 """
 import numpy as np
+from cvxopt.solvers import qp, options
+
 def backTest(param, Data, if_debug):
     secnames = Data['secnames']
     Rets = Data['Rets']
@@ -75,14 +77,14 @@ def backTest(param, Data, if_debug):
                 wNew = portValCurrent*(np.ones(nAssets)/nAssets)
             if param['PortConstr'] == 'equalvol':
                 vols = np.sqrt(np.diagonal(Sig))
-                volsinv = 1./vols
+                volsinv = 1/vols
                 volsinvsum = sum(volsinv)
                 wNew = portValCurrent*(volsinv/volsinvsum)
             if param['PortConstr'] == 'mv':
                 # Here lambda stands for 2*lambda!!!
-                lambda2 = 8;
+                lambda2 = 8
                 # Long-short
-                wNew = portValCurrent*np.quadprog(Sig*lambda2,-mu,[],[],np.ones(1,len(Sig)),1)
+                wNew = portValCurrent*qp(Sig*lambda2,-mu,[],[],np.ones(1,len(Sig)),1)['x']
         else:
             # We don't need to rebalance
             wNew = wCurrent
