@@ -4,9 +4,10 @@ Created on Tue Sep 29 09:49:13 2020
 
 This function perform a backtest of portfolio of risky securities.
 The portfolio can be constructed in several different ways:
-(1) Equal weighting (equal),
-(2) Equal vol-weighting (equalvol),
+(1) Equal weighting (equal)
+(2) Equal vol-weighting (equalvol)
 (3) Mean-Variance optimization (mv)
+(4) black litterman optimization (bl)
 
 Inputs: 
     param - structure that specifies the backtest to run
@@ -27,7 +28,7 @@ is calculated at time t.
 @contact: Shaolun.du@gmail.com
 """
 import numpy as np
-from cvxopt.solvers import qp, options
+from cvxopt.solvers import qp
 
 def backTest(param, Data, if_debug):
     secnames = Data['secnames']
@@ -36,7 +37,7 @@ def backTest(param, Data, if_debug):
     COV = Data['COV']
     ER = Data['ER']
     rebaldates = Data['rebaldates']
-    nAssets = Data['param_Data']['nAssets']
+    nAssets = len(Data['secnames'])
     
     # Define variables and allocate space
     T = len(dates)
@@ -69,7 +70,7 @@ def backTest(param, Data, if_debug):
         # Determine if we need to rebalance
         if_rebal = True if dates[t] in rebaldates else False
         # if_rebal = ~np.isempty(np.find(rebaldates == dates[t]))
-        if if_rebal:    # We need to rebalance
+        if if_rebal:  # We need to rebalance
             SigStale = Sig # std and corr
             if if_debug:
                 print('Rebalancing')
@@ -83,15 +84,17 @@ def backTest(param, Data, if_debug):
             if param['PortConstr'] == 'mv':
                 # Here lambda stands for 2*lambda!!!
                 lambda2 = 8
-                # Long-short
+                # Long-short weights
                 wNew = portValCurrent*qp(Sig*lambda2,-mu,[],[],np.ones(1,len(Sig)),1)['x']
+            if param['PortConstr'] == 'bl':
+                # to be implemented...
+                wNew = wCurrent
         else:
             # We don't need to rebalance
             wNew = wCurrent
         W[:,t] = wNew
-        RiskProj[t] = np.sqrt(wNew*Sig*wNew)/sum(wNew)
-        RiskContr[:,t] = wNew*(SigStale*wNew/(wNew*SigStale*wNew))
-        # RiskContrProj(:,t) = wNew*(Sig*wNew/(wNew*Sig*wNew))
+        RiskProj[t] = np.sqrt(wNew.T*Sig*wNew)/sum(wNew)
+        RiskContr[:,t] = wNew*(SigStale*wNew/(wNew.T*SigStale*wNew))
         trades = wNew - wCurrent
         turnover[t] = sum(abs(trades))/portValCurrent
         

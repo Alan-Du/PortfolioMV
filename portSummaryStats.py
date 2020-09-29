@@ -6,8 +6,9 @@ This function produces portfolio summary statistics
 @contact: shaolun.du@gmail.com
 """
 import numpy as np
-from maxdrawdown import maxdrawdown
+from maxDrawDown import maxDrawDown
 from scipy.stats import kurtosis, skew
+
 def portSummaryStats( output_struct, 
                       start_idx, end_idx, 
                       freq):
@@ -34,8 +35,7 @@ def portSummaryStats( output_struct,
     summary_stats['kurtosis'] = kurtosis(portRet)
     
     # Max drawdown
-    # to be implemented
-    drawdown = maxdrawdown(portRet)
+    drawdown = maxDrawDown(portRet)
     summary_stats['drawdown'] = -drawdown*100
     
     return summary_stats

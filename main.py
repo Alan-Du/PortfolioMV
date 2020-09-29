@@ -24,8 +24,10 @@ if_debug = False  # turn off debugging output
 # Data
 param = {}
 param['datasource'] = 'testData'
+# rebal frequency could be nD(n days),nM(n months)
+param['rebalFreq'] = "1M" 
 # Read data here
-Data = readData(param['datasource'])
+Data = readData(param)
 
 # All data is daily, assuming 260 days in a year
 param['freq'] = 260
@@ -34,30 +36,33 @@ param['freq'] = 260
 nAssets = len(Data['secnames'])
 
 # General backtest parameters
-param['capital'] = 10**6  # initial cash position in dollars
+param['capital']         = 10**6  # initial cash position in dollars
 param['output_filename'] = [param['datasource']+'_output']
 
 """
-param PortConstr could be---
+param-PortConstr could be...
     1.equal: equal weighted portfolio
     2.equalvol: equal volatility portfolio
     3.mv: mean variance portfolio
+    4.bl: black litterman portfolio
 """
+
 param['PortConstr'] = 'mv'
-param['outputdoc'] = [param['PortConstr']+'_output']
+param['outputdoc']  = [param['PortConstr']+'_output']
 
 # Parameters for the reports
-doctype = 'docx'
-res_incep = []
-res_fiveYrs = []
+doctype      = 'docx'
+res_incep    = []
+res_fiveYrs  = []
 res_threeYrs = []
-res_oneYr = []
+res_oneYr    = []
 
 # Backtesting
 outputBackTest = backTest(param,Data,if_debug)
+result = portSummaryStatsAll(outputBackTest,param)
+# Write into docs
 generateReport(outputBackTest,param['outputdoc'],doctype)
 
-result = portSummaryStatsAll(outputBackTest,param)
 
 # Stop clock
 end = time.time()

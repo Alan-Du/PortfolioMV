@@ -6,6 +6,7 @@ This function generates all portfolio summary stats
 @contact: shaolun.du@gmail.co
 """
 from portSummaryStats import portSummaryStats
+
 def portSummaryStatsAll(output_struct,param):
     nDays = len(output_struct['retdates'])
     freq = param['freq']

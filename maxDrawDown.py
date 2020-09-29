@@ -7,4 +7,13 @@ based on return series
 @contact: Shaolun.du@gmail.com
 """
 def maxDrawDown(rets):
-    return None
+    # rets is portfolio returns
+    # on daily basis
+    # return = maxDrawDown
+    mDD = 0
+    level,cur_max = 1,0
+    for ele in rets:
+        level *= (ele+1)
+        cur_max = max(cur_max,level)
+        mDD = max(cur_max-level,mDD)
+    return mDD
