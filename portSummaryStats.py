@@ -21,7 +21,7 @@ def portSummaryStats( output_struct,
     summary_stats['start_idx'] = start_idx
     summary_stats['end_idx'] = end_idx
     summary_stats['startdate'] = retdates[start_idx] 
-    summary_stats['enddate'] = retdates[end_idx]
+    summary_stats['enddate'] = retdates[end_idx-1]
     
     portRet = portRet[start_idx:end_idx]
     

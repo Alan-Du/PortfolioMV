@@ -31,6 +31,7 @@ import numpy as np
 from cvxopt.solvers import qp
 
 def backTest(param, Data, if_debug):
+    # read info from Dataset
     secnames   = Data['secnames']
     rets       = Data['rets']
     dates      = Data['dates']
@@ -38,44 +39,40 @@ def backTest(param, Data, if_debug):
     ER         = Data['ER']
     rebaldates = Data['rebaldates']
     nAssets    = Data['nAssets']
-    rebalFreq  = Data["rebalFreq"]
-    
     # Define variables and allocate space
-    T           = len(dates)
-    cash        = np.zeros(T)
-    tcosts      = np.zeros(T)
-    turnover    = np.zeros(T)
-    portVal     = np.zeros(T)
-    portRet     = np.zeros(T-1)
-    retdates    = np.zeros(T-1)
-    W           = np.zeros((nAssets,T))
-    RiskContr   = np.zeros((nAssets,T-1))
-    securityRet = np.zeros((nAssets,T-1))
-    RiskProj    = np.zeros(T-1)
-    SigStale    = np.zeros((nAssets,nAssets))
-    # At t = 1
-    # Initial portfolio value
-    # and risk factor allocations
+    T              = len(dates)
+    cash           = np.zeros(T)
+    tcosts         = np.zeros(T)
+    turnover       = np.zeros(T)
+    portVal        = np.zeros(T)
+    portRet        = np.zeros(T)
+    retdates       = np.zeros(T)
+    W              = np.zeros((nAssets,T))
+    RiskContr      = np.zeros((nAssets,T))
+    securityRet    = np.zeros((nAssets,T))
+    RiskProj       = np.zeros(T)
+    SigStale       = np.zeros((nAssets,nAssets))
     cash[0]        = param['capital']
     portVal[0]     = cash[0]
     portValCurrent = portVal[0]
     wCurrent       = W[:,0]
     # Now move forward in time and rebalalance when needed
-    for t in range(1,T-1):
+    for t in range(1,T):
+        date_t = dates[t]
         if if_debug:
-            print(t)
+            print("Current Time:{}".format(date_t))
+            print("Current weights:{}".format(wCurrent))
         # Covariance matrix 
-        Sig = COV[dates[t]]
-        mu  = ER[dates[t]]
+        Sig = COV[date_t]
+        mu  = ER[date_t]
         # Determine if we need to rebalance
-        if_rebal = True if dates[t] in rebaldates else False
+        if_rebal = True if date_t in rebaldates else False
         if if_rebal:  # We need to rebalance
             if if_debug:
                 print('Rebalancing...')
             SigStale = Sig
             if param['PortConstr'] == 'equal':
                 wNew = portValCurrent*(np.ones(nAssets)/nAssets)
-                print(wNew)
             if param['PortConstr'] == 'equalvol':
                 vols       = np.sqrt(np.diagonal(Sig))
                 volsinv    = 1/vols
@@ -92,26 +89,25 @@ def backTest(param, Data, if_debug):
         else:
             # We don't need to rebalance
             wNew = wCurrent
-        wTsigw         = np.dot(np.dot(wNew,Sig),wNew)
-        wTsigwStale    = np.dot(np.dot(wNew,SigStale),wNew)
-        W[:,t]         = wNew
-        RiskProj[t]    = np.sqrt(wTsigw)/sum(wNew)
-        RiskContr[:,t] = np.dot(wNew,np.dot(Sig,wNew))/wTsigwStale
-        trades         = wNew - wCurrent
-        turnover[t]    = sum(abs(trades))/portValCurrent
+        wTsigw           = np.dot(np.dot(wNew,Sig),wNew)
+        wTsigwStale      = np.dot(np.dot(wNew,SigStale),wNew)
+        W[:,t]           = wNew
+        RiskProj[t]      = np.sqrt(wTsigw)/sum(wNew)
+        RiskContr[:,t]   = np.dot(wNew,np.dot(Sig,wNew))/wTsigwStale
+        trades           = wNew - wCurrent
+        turnover[t]      = sum(abs(trades))/portValCurrent
         # Calculate portfolio at the end of the period
         # (If needed in the futute, add cash position here)
-        print(np.ones(nAssets)+rets.iloc[t].to_numpy())
-        print(wNew)
-        sss
-        wCurrent           = np.multiply(wNew,np.ones(nAssets)+rets.iloc[t].to_numpy())
-        securityRet[:,t-1] = np.dot(wNew,rets.iloc[t].to_numpy().T)
-        portValCurrent     = sum(wCurrent)
-        portVal[t]         = portValCurrent
+        wCurrent         = np.multiply(wNew,np.ones(nAssets)+rets.iloc[t].to_numpy())
+        securityRet[:,t] = np.dot(wNew,rets.iloc[t].to_numpy().T)
+        portValCurrent   = sum(wCurrent)
+        portVal[t]       = portValCurrent
+        portRet[t]       = (portVal[t]-portVal[t-1])/portVal[t-1]
+        retdates[t]      = date_t
+        # Error checking if current port value below zero
         if portVal[t]<0:
-            raise Exception('Port val less than zero!{}\n'.format(t))
-        portRet[t-1]  = (portVal[t]-portVal[t-1])/portVal[t-1]
-        retdates[t-1] = dates[t]
+            raise Exception('Port val less than zero!{}\n'.format(portVal[t]))
+        
     
     # Populate output structure
     output_struct                  = {}
@@ -126,5 +122,5 @@ def backTest(param, Data, if_debug):
     output_struct['securityRet']   = securityRet
     output_struct['portRet']       = portRet
     output_struct['retdates']      = retdates    
-    
+    output_struct['PortConstr']    = param['PortConstr']  
     return output_struct

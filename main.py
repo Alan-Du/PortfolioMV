@@ -2,7 +2,8 @@
 """
 Created on Wed Sep 23 13:56:16 2020
 
-This script that calls the BackTest function to perform backtests of
+This script that calls the BackTest 
+function to perform backtests of
 portfolios of securities.
 
 @author: Shaolun Du
@@ -25,17 +26,13 @@ if_debug = False  # turn off debugging output
 param = {}
 param['datasource'] = 'Data'
 param['rebalFreq']  = "1M"   # rebal frequency could be nD(n days),nM(n months)
-param['ERmethod']   = "hist" 
+param['ERmethod']   = "hist"
+
 # Read data here
 Data = readData(param)
 
-# All data is daily, assuming 260 days in a year
-param['freq'] = 260
-
-# Number of assets
-nAssets = Data['nAssets']
-
 # General backtest parameters
+param['freq']            = 260  # All data is daily, assuming 260 days in a year
 param['capital']         = 10**6  # initial cash position in dollars
 param['output_filename'] = [param['datasource']+'_output']
 
@@ -47,28 +44,15 @@ param-PortConstr could be...
     4.bl: black litterman portfolio
 """
 
-param['PortConstr'] = 'equal'
-param['outputdoc']  = [param['PortConstr']+'_output']
-
-# Parameters for the reports
-doctype      = 'docx'
-res_incep    = []
-res_fiveYrs  = []
-res_threeYrs = []
-res_oneYr    = []
-
 # Backtesting
-outputBackTest = backTest(param,Data,if_debug)
-#print(outputBackTest)
-sss
+param['PortConstr']  = 'equalvol'
+outputBackTest       = backTest(param,Data,if_debug)
+summary              = portSummaryStatsAll(outputBackTest,param)
+outputBackTest['smy']= summary
 
-result = portSummaryStatsAll(outputBackTest,param)
-# Write into docs
-generateReport(outputBackTest,param['outputdoc'],doctype)
-
+# report generation
+generateReport(outputBackTest)
 
 # Stop clock
 end = time.time()
-print("Total time passed:{}".format(end-start))
-
-    
+print("Total time passed:{}".format(end-start))    

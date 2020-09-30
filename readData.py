@@ -51,14 +51,21 @@ def readData(param):
         raise Exception("please input a vaild rebalance period...")
     # sort datetime index in ascending order
     df        = pd.read_excel(fileName, index_col=0).sort_index()
-    rets      = df.pct_change().dropna() # drop the first row
+    rets      = df.pct_change().fillna(0)
     secnames  = df.columns.to_numpy()
     nAssets   = len(secnames)
     dates     = df.index.to_numpy()
-    rebaldates= np.array([dates[i*rebal] for i in range(len(dates)//rebal)])
+    # skip the first rebalance date
+    # because we need to calculate historical return and cov
+    # always shift rebalance date by one since we start on day0
+    rebaldates= [dates[i*rebal+1] for i in range(1,len(dates)//rebal)]
+    # always addin the last trading date
+    if dates[-1] not in rebaldates:
+        rebaldates.append(dates[-1])
+    rebaldates = np.array(rebaldates)
     ER = {}
     COV = {}
-    for loc in range(rebal+1,len(dates)):
+    for loc in range(rebal,len(dates)):
         cov = rets.iloc[loc-rebal:loc].cov()
         COV[dates[loc]] = cov
         if param['ERmethod']=="hist":
@@ -81,14 +88,6 @@ def readData(param):
     ret_dict["ER"]         = ER
     ret_dict["rebaldates"] = rebaldates
     ret_dict["nAssets"]    = nAssets
-    ret_dict["rebalFreq"]  = rebal
     return ret_dict
 
 
-# #################################
-# Testing function below
-# param = { "datasource": "Data",
-#           "rebalFreq" : "1M",
-#           "ERmethod"  : "hist" }
-# Data = readData(param)
-# print(Data["rebaldate"])

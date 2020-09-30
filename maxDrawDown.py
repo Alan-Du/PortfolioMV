@@ -16,4 +16,4 @@ def maxDrawDown(rets):
         level *= (ele+1)
         cur_max = max(cur_max,level)
         mDD = max(cur_max-level,mDD)
-    return mDD
+    return -mDD
