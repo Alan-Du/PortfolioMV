@@ -23,9 +23,9 @@ if_debug = False  # turn off debugging output
 
 # Data
 param = {}
-param['datasource'] = 'testData'
-# rebal frequency could be nD(n days),nM(n months)
-param['rebalFreq'] = "1M" 
+param['datasource'] = 'Data'
+param['rebalFreq']  = "1M"   # rebal frequency could be nD(n days),nM(n months)
+param['ERmethod']   = "hist" 
 # Read data here
 Data = readData(param)
 
@@ -33,7 +33,7 @@ Data = readData(param)
 param['freq'] = 260
 
 # Number of assets
-nAssets = len(Data['secnames'])
+nAssets = Data['nAssets']
 
 # General backtest parameters
 param['capital']         = 10**6  # initial cash position in dollars
@@ -47,7 +47,7 @@ param-PortConstr could be...
     4.bl: black litterman portfolio
 """
 
-param['PortConstr'] = 'mv'
+param['PortConstr'] = 'equal'
 param['outputdoc']  = [param['PortConstr']+'_output']
 
 # Parameters for the reports
@@ -59,6 +59,9 @@ res_oneYr    = []
 
 # Backtesting
 outputBackTest = backTest(param,Data,if_debug)
+#print(outputBackTest)
+sss
+
 result = portSummaryStatsAll(outputBackTest,param)
 # Write into docs
 generateReport(outputBackTest,param['outputdoc'],doctype)

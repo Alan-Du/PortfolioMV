@@ -31,96 +31,100 @@ import numpy as np
 from cvxopt.solvers import qp
 
 def backTest(param, Data, if_debug):
-    secnames = Data['secnames']
-    Rets = Data['Rets']
-    dates = Data['dates']
-    COV = Data['COV']
-    ER = Data['ER']
+    secnames   = Data['secnames']
+    rets       = Data['rets']
+    dates      = Data['dates']
+    COV        = Data['COV']
+    ER         = Data['ER']
     rebaldates = Data['rebaldates']
-    nAssets = len(Data['secnames'])
+    nAssets    = Data['nAssets']
+    rebalFreq  = Data["rebalFreq"]
     
     # Define variables and allocate space
-    T = len(dates)
-    cash = np.zeros(T)
-    tcosts = np.zeros(T)
-    turnover = np.zeros(T)
-    portVal = np.zeros(T)
-    portRet = np.zeros(T-1)
-    retdates = np.zeros(T-1)
-    W = np.zeros(nAssets,T)
-    RiskContr = np.zeros(nAssets,T-1)
-    securityRet = np.zeros(nAssets)
-    RiskProj = np.zeros(T-1)
-    
+    T           = len(dates)
+    cash        = np.zeros(T)
+    tcosts      = np.zeros(T)
+    turnover    = np.zeros(T)
+    portVal     = np.zeros(T)
+    portRet     = np.zeros(T-1)
+    retdates    = np.zeros(T-1)
+    W           = np.zeros((nAssets,T))
+    RiskContr   = np.zeros((nAssets,T-1))
+    securityRet = np.zeros((nAssets,T-1))
+    RiskProj    = np.zeros(T-1)
+    SigStale    = np.zeros((nAssets,nAssets))
     # At t = 1
     # Initial portfolio value
     # and risk factor allocations
-    cash[0] = param['capital']
-    portVal[0] = cash[0]
-    
+    cash[0]        = param['capital']
+    portVal[0]     = cash[0]
     portValCurrent = portVal[0]
-    wCurrent = W[:,0]
+    wCurrent       = W[:,0]
     # Now move forward in time and rebalalance when needed
-    for t in range(1,T):
+    for t in range(1,T-1):
         if if_debug:
             print(t)
         # Covariance matrix 
-        Sig = COV[:,:,t]
-        mu = ER[:,t]
+        Sig = COV[dates[t]]
+        mu  = ER[dates[t]]
         # Determine if we need to rebalance
         if_rebal = True if dates[t] in rebaldates else False
-        # if_rebal = ~np.isempty(np.find(rebaldates == dates[t]))
         if if_rebal:  # We need to rebalance
-            SigStale = Sig # std and corr
             if if_debug:
-                print('Rebalancing')
+                print('Rebalancing...')
+            SigStale = Sig
             if param['PortConstr'] == 'equal':
                 wNew = portValCurrent*(np.ones(nAssets)/nAssets)
+                print(wNew)
             if param['PortConstr'] == 'equalvol':
-                vols = np.sqrt(np.diagonal(Sig))
-                volsinv = 1/vols
+                vols       = np.sqrt(np.diagonal(Sig))
+                volsinv    = 1/vols
                 volsinvsum = sum(volsinv)
-                wNew = portValCurrent*(volsinv/volsinvsum)
+                wNew       = portValCurrent*(volsinv/volsinvsum)
             if param['PortConstr'] == 'mv':
-                # Here lambda stands for 2*lambda!!!
-                lambda2 = 8
+                # Here lambda stands for 2*lambda
                 # Long-short weights
-                wNew = portValCurrent*qp(Sig*lambda2,-mu,[],[],np.ones(1,len(Sig)),1)['x']
+                lambda2 = 8
+                wNew    = portValCurrent*qp(Sig*lambda2,-mu,[],[],np.ones((1,len(Sig))),1)['x']
             if param['PortConstr'] == 'bl':
                 # to be implemented...
                 wNew = wCurrent
         else:
             # We don't need to rebalance
             wNew = wCurrent
-        W[:,t] = wNew
-        RiskProj[t] = np.sqrt(wNew.T*Sig*wNew)/sum(wNew)
-        RiskContr[:,t] = wNew*(SigStale*wNew/(wNew.T*SigStale*wNew))
-        trades = wNew - wCurrent
-        turnover[t] = sum(abs(trades))/portValCurrent
-        
+        wTsigw         = np.dot(np.dot(wNew,Sig),wNew)
+        wTsigwStale    = np.dot(np.dot(wNew,SigStale),wNew)
+        W[:,t]         = wNew
+        RiskProj[t]    = np.sqrt(wTsigw)/sum(wNew)
+        RiskContr[:,t] = np.dot(wNew,np.dot(Sig,wNew))/wTsigwStale
+        trades         = wNew - wCurrent
+        turnover[t]    = sum(abs(trades))/portValCurrent
         # Calculate portfolio at the end of the period
         # (If needed in the futute, add cash position here)
-        wCurrent = wNew*(np.ones(len(Rets))+Rets[:,t])
-        securityRet[:,t-1] = wNew*Rets[:,t]
-        portValCurrent = sum(wCurrent)
-        portVal[t] = portValCurrent
-        if portVal[t] < 0:
+        print(np.ones(nAssets)+rets.iloc[t].to_numpy())
+        print(wNew)
+        sss
+        wCurrent           = np.multiply(wNew,np.ones(nAssets)+rets.iloc[t].to_numpy())
+        securityRet[:,t-1] = np.dot(wNew,rets.iloc[t].to_numpy().T)
+        portValCurrent     = sum(wCurrent)
+        portVal[t]         = portValCurrent
+        if portVal[t]<0:
             raise Exception('Port val less than zero!{}\n'.format(t))
-        portRet[t-1] = (portVal[t]-portVal[t-1])/portVal[t-1]
+        portRet[t-1]  = (portVal[t]-portVal[t-1])/portVal[t-1]
         retdates[t-1] = dates[t]
     
     # Populate output structure
-    output_struct = {}
-    output_struct['portVal'] = portVal
-    output_struct['dates'] = dates
-    output_struct['W'] = W
+    output_struct                  = {}
+    output_struct['portVal']       = portVal
+    output_struct['dates']         = dates
+    output_struct['W']             = W
     output_struct['RiskContrProj'] = RiskContr
-    output_struct['RiskProj'] = RiskProj
-    output_struct['cash'] = cash
-    output_struct['turnover'] = turnover
-    output_struct['secnames'] = secnames
-    output_struct['securityRet'] = securityRet
-    output_struct['portRet'] = portRet
-    output_struct['retdates'] = retdates    
+    output_struct['RiskProj']      = RiskProj
+    output_struct['cash']          = cash
+    output_struct['turnover']      = turnover
+    output_struct['secnames']      = secnames
+    output_struct['securityRet']   = securityRet
+    output_struct['portRet']       = portRet
+    output_struct['retdates']      = retdates    
     
     return output_struct
