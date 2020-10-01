@@ -15,12 +15,13 @@ def portSummaryStats( output_struct,
     summary_stats = {} # return dictionary
     
     portRet = output_struct['portRet']
+    portVal = output_struct['portVal']
     retdates = output_struct['retdates']
     
     # Index and dates
     summary_stats['start_idx'] = start_idx
     summary_stats['end_idx'] = end_idx
-    summary_stats['startdate'] = retdates[start_idx] 
+    summary_stats['startdate'] = retdates[start_idx]
     summary_stats['enddate'] = retdates[end_idx-1]
     
     portRet = portRet[start_idx:end_idx]
@@ -35,7 +36,7 @@ def portSummaryStats( output_struct,
     summary_stats['kurtosis'] = kurtosis(portRet)
     
     # Max drawdown
-    drawdown = maxDrawDown(portRet)
-    summary_stats['drawdown'] = -drawdown*100
+    drawdown = maxDrawDown(portVal[start_idx:end_idx])
+    summary_stats['drawdown'] = drawdown
     
     return summary_stats

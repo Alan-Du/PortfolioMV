@@ -25,8 +25,8 @@ if_debug = False  # turn off debugging output
 # Data
 param = {}
 param['datasource'] = 'Data'
-param['rebalFreq']  = "1M"   # rebal frequency could be nD(n days),nM(n months)
-param['ERmethod']   = "hist"
+param['rebalFreq']  = "2M"   # rebal frequency could be nD(n days),nM(n months)
+param['PortConstr'] = 'bl'
 
 # Read data here
 Data = readData(param)
@@ -45,7 +45,6 @@ param-PortConstr could be...
 """
 
 # Backtesting
-param['PortConstr']  = 'equalvol'
 outputBackTest       = backTest(param,Data,if_debug)
 summary              = portSummaryStatsAll(outputBackTest,param)
 outputBackTest['smy']= summary

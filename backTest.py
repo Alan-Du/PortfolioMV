@@ -28,7 +28,10 @@ is calculated at time t.
 @contact: Shaolun.du@gmail.com
 """
 import numpy as np
-from cvxopt.solvers import qp
+from cvxopt import solvers
+from cvxopt import matrix
+# global silent the solvers
+solvers.options['show_progress'] = False
 
 def backTest(param, Data, if_debug):
     # read info from Dataset
@@ -58,6 +61,9 @@ def backTest(param, Data, if_debug):
     wCurrent       = W[:,0]
     # Now move forward in time and rebalalance when needed
     for t in range(1,T):
+        # Error checking if current port value below zero
+        if portVal[t]<0:
+            raise Exception('Port val less than zero!{}\n'.format(portVal[t]))
         date_t = dates[t]
         if if_debug:
             print("Current Time:{}".format(date_t))
@@ -80,12 +86,28 @@ def backTest(param, Data, if_debug):
                 wNew       = portValCurrent*(volsinv/volsinvsum)
             if param['PortConstr'] == 'mv':
                 # Here lambda stands for 2*lambda
-                # Long-short weights
+                # Long only weights
                 lambda2 = 8
-                wNew    = portValCurrent*qp(Sig*lambda2,-mu,[],[],np.ones((1,len(Sig))),1)['x']
+                P = matrix(Sig*lambda2)
+                q = matrix(-mu.T)
+                G = matrix(-np.eye(nAssets))
+                h = matrix(np.zeros(nAssets))
+                A = matrix(np.ones((1,nAssets)))
+                b = matrix(np.ones(1))
+                wNew = portValCurrent*np.array(solvers.qp(P,q,G,h,A,b)['x']).reshape((nAssets,))
             if param['PortConstr'] == 'bl':
-                # to be implemented...
-                wNew = wCurrent
+                # black litterman model
+                # cov= pca(cov)
+                # er = avg(market equal,momentum)
+                lambda2 = 8
+                P = matrix(Sig*lambda2)
+                q = matrix(-mu.T)
+                G = matrix(-np.eye(nAssets))
+                h = matrix(np.zeros(nAssets))
+                A = matrix(np.ones((1,nAssets)))
+                b = matrix(np.ones(1))
+                wNew = portValCurrent*np.array(solvers.qp(P,q,G,h,A,b)['x']).reshape((nAssets,))
+            
         else:
             # We don't need to rebalance
             wNew = wCurrent
@@ -98,15 +120,12 @@ def backTest(param, Data, if_debug):
         turnover[t]      = sum(abs(trades))/portValCurrent
         # Calculate portfolio at the end of the period
         # (If needed in the futute, add cash position here)
-        wCurrent         = np.multiply(wNew,np.ones(nAssets)+rets.iloc[t].to_numpy())
+        wCurrent         = np.multiply(wNew,1+rets.iloc[t].to_numpy())
         securityRet[:,t] = np.dot(wNew,rets.iloc[t].to_numpy().T)
         portValCurrent   = sum(wCurrent)
         portVal[t]       = portValCurrent
         portRet[t]       = (portVal[t]-portVal[t-1])/portVal[t-1]
         retdates[t]      = date_t
-        # Error checking if current port value below zero
-        if portVal[t]<0:
-            raise Exception('Port val less than zero!{}\n'.format(portVal[t]))
         
     
     # Populate output structure

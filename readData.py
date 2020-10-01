@@ -25,6 +25,8 @@ NOTE: make sure you are supplying it with DAILY dataset
 import pandas as pd
 import numpy as np
 from scipy import stats
+from sklearn.decomposition import PCA
+
 def readData(param):
     # readData funtion will look
     # in the current directory of
@@ -43,8 +45,7 @@ def readData(param):
     period = int(rebalFreq[:-1])
     unit = rebalFreq[-1]
     if unit=="M":
-        # assuming 22 trading days in a month
-        rebal = period*22
+        rebal = period*22 # assuming 22 trading days in a month
     elif unit=="D":
         rebal = period
     else:
@@ -66,18 +67,19 @@ def readData(param):
     ER = {}
     COV = {}
     for loc in range(rebal,len(dates)):
-        cov = rets.iloc[loc-rebal:loc].cov()
-        COV[dates[loc]] = cov
-        if param['ERmethod']=="hist":
+        if param['PortConstr'] in ("equal","equalvol"):
             # epected return based on historical average
             er = stats.gmean(1+rets.iloc[loc-rebal:loc],axis=0)-1
-        elif param['ERmethod']=="mom":
-            # momentum expected return
-            er = np.zeros(len(secnames))
-        elif param['ERmethod']=="bl":
+            cov = rets.iloc[loc-rebal:loc].cov().values
+        elif param['PortConstr'] in ("mv","bl"):
             # black litterman expected return
-            er = np.zeros(len(secnames))
-        ER[dates[loc]] = er
+            # pca to approximate covariance matrix
+            er  = stats.gmean(1+rets.iloc[loc-rebal:loc],axis=0)-1
+            pca = PCA(n_components=2)
+            pca.fit(rets.iloc[loc-rebal:loc])
+            cov = pca.get_covariance()
+        COV[dates[loc]] = cov
+        ER[dates[loc]]  = er
         
     # return dictionary setup
     ret_dict = {}

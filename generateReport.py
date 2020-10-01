@@ -36,14 +36,18 @@ def generateReport(output_struct):
     
     # Start plot report
     fig = plt.figure(figsize=(18,38))
-    fig.suptitle('BackTest Output for '+strat+' portfolio', fontsize=35)
+    fig.suptitle(strat+' portfolio BackTest Output', fontsize=35)
     gs = fig.add_gridspec(4,2)
     """  Plot one summary table of strategy
     """
     ax0 = fig.add_subplot(gs[0, :])
     ax0.axis('off')
+    rcolors = plt.cm.BuPu(np.full(len(summary.index), 0.1))
+    ccolors = plt.cm.BuPu(np.full(len(summary.columns), 0.1))
     ytb = ax0.table(cellText=summary.values,
                     colWidths = [0.15]*len(summary.columns),
+                    rowColours=rcolors,
+                    colColours=ccolors,
                     rowLabels=summary.index,
                     colLabels=summary.columns,
                     cellLoc = 'center', rowLoc = 'center',
@@ -107,9 +111,9 @@ def generateReport(output_struct):
     portMDD = []
     for i in range(len(dates)):
         if i < lookback:
-            portMDD.append(maxDrawDown(portRet[:i]))
+            portMDD.append(maxDrawDown(portVal[:i]))
         else:
-            portMDD.append(maxDrawDown(portRet[i-lookback:i]))
+            portMDD.append(maxDrawDown(portVal[i-lookback:i]))
     ax4 = fig.add_subplot(gs[2,1])
     ax4.plot(dates, portVal, color="navy")
     ax4.set_xlabel("Dates",fontsize=14)
@@ -137,5 +141,5 @@ def generateReport(output_struct):
     ax6.legend(loc='upper left')
     ax6.set_title('portWeights')
     #plt.tight_layout()
-    fig.savefig(outDir+'BackTestDetails.png')
+    fig.savefig(outDir+strat+'BackTestDetails.png')
     return None

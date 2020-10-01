@@ -10,8 +10,6 @@ import pandas as pd
 def portSummaryStatsAll(output_struct,param):
     nDays = len(output_struct['retdates'])
     freq = param['freq']
-    PortConstr = param['PortConstr']
-    
     # Since inception
     summary = portSummaryStats(output_struct,1, nDays, freq)
     incep = [summary['ann_ret'], summary['ann_vol'], summary['ann_Sharpe'],
@@ -32,8 +30,7 @@ def portSummaryStatsAll(output_struct,param):
     ans = []
     for ele in [incep,fiveYrs,threeYrs,oneYr]:
         ans.append({
-            'stra'  :PortConstr,
-            'period':ele[6],
+            'lookback':ele[6],
             'annRet':round(ele[0],3),
             'annVol':round(ele[1],3),
             'annShp':round(ele[2],3),
@@ -41,4 +38,4 @@ def portSummaryStatsAll(output_struct,param):
             'annKrt':round(ele[4],3),
             'annMDD':round(ele[5],3),
             })
-    return pd.DataFrame(ans).reset_index(drop=True)
+    return pd.DataFrame(ans).set_index('lookback')
