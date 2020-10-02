@@ -87,11 +87,12 @@ def backTest(param, Data, if_debug):
             if param['PortConstr'] == 'mv':
                 # Here lambda stands for 2*lambda
                 # Long only weights
-                lambda2 = 8
+                lambda2 = 100
+                threshold = 0.25
                 P = matrix(Sig*lambda2)
                 q = matrix(-mu.T)
-                G = matrix(-np.eye(nAssets))
-                h = matrix(np.zeros(nAssets))
+                G = matrix(np.concatenate((-np.eye(nAssets), np.eye(nAssets)), axis=0))
+                h = matrix(np.concatenate((np.zeros(nAssets),threshold*np.ones(nAssets)), axis=0))
                 A = matrix(np.ones((1,nAssets)))
                 b = matrix(np.ones(1))
                 wNew = portValCurrent*np.array(solvers.qp(P,q,G,h,A,b)['x']).reshape((nAssets,))
@@ -100,10 +101,11 @@ def backTest(param, Data, if_debug):
                 # cov= pca(cov)
                 # er = avg(market equal,momentum)
                 lambda2 = 100
+                threshold = 0.25
                 P = matrix(Sig*lambda2)
                 q = matrix(-mu.T)
-                G = matrix(-np.eye(nAssets))
-                h = matrix(np.zeros(nAssets))
+                G = matrix(np.stack((-np.eye(nAssets), np.eye(nAssets))))
+                h = matrix(np.stack(np.zeros(nAssets),threshold*np.ones(nAssets)))
                 A = matrix(np.ones((1,nAssets)))
                 b = matrix(np.ones(1))
                 wNew = portValCurrent*np.array(solvers.qp(P,q,G,h,A,b)['x']).reshape((nAssets,))

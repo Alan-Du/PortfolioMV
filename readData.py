@@ -66,19 +66,17 @@ def readData(param, if_debug):
     rebaldates = np.array(rebaldates)
     ER = {}
     COV = {}
+    pca = PCA(n_components=2) # selecting top 2 vectors
     for loc in range(rebal,len(dates)):
         if param['PortConstr'] in ("equal","equalvol"):
             # epected return based on historical average
             er = stats.gmean(1+rets.iloc[loc-rebal:loc],axis=0)-1
-            cov = rets.iloc[loc-rebal:loc].cov().values
         elif param['PortConstr'] in ("mv","bl"):
             # black litterman expected return
-            # pca to approximate covariance matrix
             er  = stats.gmean(1+rets.iloc[loc-rebal:loc],axis=0)-1
-            pca = PCA(n_components=2)
-            pca.fit(rets.iloc[loc-rebal:loc])
-            cov = pca.get_covariance()
-        COV[dates[loc]] = cov
+        # Always use pca to reduce noise in cov matrix
+        pca.fit(rets.iloc[loc-rebal:loc])
+        COV[dates[loc]] = pca.get_covariance()
         ER[dates[loc]]  = er
         
     # return dictionary setup

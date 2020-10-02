@@ -21,20 +21,6 @@ start = time.time()
 # Degugging?
 if_debug = False
 
-# Data
-param = {}
-param['datasource'] = 'Data'
-param['rebalFreq']  = "1M"   # rebal frequency could be nD(n days),nM(n months)
-param['PortConstr'] = 'bl'
-
-# Read data here
-Data = readData(param,if_debug)
-
-# General backtest parameters
-param['freq']            = 260  # All data is daily, assuming 260 days in a year
-param['capital']         = 10**6  # initial cash position in dollars
-param['output_filename'] = [param['datasource']+'_output']
-
 """
 param-PortConstr could be...
     1.equal: equal weighted portfolio
@@ -42,6 +28,19 @@ param-PortConstr could be...
     3.mv: mean variance portfolio
     4.bl: black litterman portfolio
 """
+
+param = {}
+param['datasource'] = 'Data'
+param['rebalFreq']  = "2M"   # rebal frequency could be nD(n days),nM(n months)
+param['PortConstr'] = 'mv'
+
+# General backtest parameters
+param['freq']            = 260  # All data is daily, assuming 260 days in a year
+param['capital']         = 10**6  # initial cash position in dollars
+param['output_filename'] = [param['datasource']+'_output']
+
+# Read data here
+Data = readData(param,if_debug)
 
 # Backtesting
 outputBackTest       = backTest(param,Data,if_debug)
