@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Sep 29 12:46:10 2020
 This function produces portfolio summary statistics
 @author: Shaolun Du
 @contact: shaolun.du@gmail.com

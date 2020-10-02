@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Sep 29 12:33:07 2020
 This funtion reads data from csv file or
 local database after user setting up.
 readData funtion will look
@@ -51,11 +50,16 @@ def readData(param, if_debug):
     else:
         raise Exception("please input a vaild rebalance period...")
     # sort datetime index in ascending order
-    df        = pd.read_excel(fileName, index_col=0).sort_index()
+    xls       = pd.ExcelFile(fileName)
+    df        = pd.read_excel(xls,'Price',index_col=0).sort_index()
     rets      = df.pct_change().fillna(0)
     secnames  = df.columns.to_numpy()
     nAssets   = len(secnames)
     dates     = df.index.to_numpy()
+    if param['PortConstr'] == "bl":
+        # black litterman model needs market cap data
+        mktCap = pd.read_excel(xls,'Cap',index_col=0).sort_index()
+        
     # skip the first rebalance date
     # because we need to calculate historical return and cov
     # always shift rebalance date by one since we start on day0
@@ -64,20 +68,57 @@ def readData(param, if_debug):
     if dates[-1] not in rebaldates:
         rebaldates.append(dates[-1])
     rebaldates = np.array(rebaldates)
+    
     ER = {}
     COV = {}
     pca = PCA(n_components=2) # selecting top 2 vectors
     for loc in range(rebal,len(dates)):
-        if param['PortConstr'] in ("equal","equalvol"):
-            # epected return based on historical average
-            er = stats.gmean(1+rets.iloc[loc-rebal:loc],axis=0)-1
-        elif param['PortConstr'] in ("mv","bl"):
-            # black litterman expected return
-            er  = stats.gmean(1+rets.iloc[loc-rebal:loc],axis=0)-1
         # Always use pca to reduce noise in cov matrix
         pca.fit(rets.iloc[loc-rebal:loc])
-        COV[dates[loc]] = pca.get_covariance()
-        ER[dates[loc]]  = er
+        cov = pca.get_covariance()
+        COV[dates[loc]] = cov
+        if param['PortConstr'] in ("equal","equalvol"):
+            # euqal and equalvol portfolio do not need expected returns
+            er = np.zeros(nAssets)
+        elif param['PortConstr'] == "bl":
+            # Black litterman expected return
+            # using momentum Views for now
+            # expected return formular 
+            #    ER = [(scalar*cov)^(-1)+P.T*bigSig^-1*P]*[(scalar*cov)^(-1)+P.T*bigSig^-1*Q]
+            #    scalar: user defined weights between market weights and model weights
+            #    cov: covariance matrix
+            #    P: identification matrix for assets and views
+            #    Q: manager views(use momentum view for now)
+            #    bigSig: confidence matrix for each views
+            # NOTE: For manager's view matrix Q it can be both
+            #       absolute view and relative view
+            scalar = 5
+            numView = 1
+            curCap = (mktCap.iloc[loc]/sum(mktCap.iloc[loc])).to_numpy()
+            # I use single relative momentum views for now
+            # assume the view are winning stock outperform
+            # lossing stock by 10% in the next period
+            Q  = 10*np.ones((numView,1))
+            cur_p = df.iloc[loc]
+            pre_p = df.iloc[loc-rebal]
+            period_ret = sorted([[ind,ret] for ind,ret in enumerate((cur_p-pre_p)/pre_p)],key=lambda x:x[1])
+            P = np.ones((numView,nAssets))
+            # assign views into P matrix
+            # note here assume numView is only 1
+            for i in range(len(period_ret)//2):
+                ele = period_ret[i]
+                P[0][ele[0]]=-1
+            if len(period_ret)%2!=0:
+                P[0][len(period_ret)//2+1]=0
+            # bigSig is the uncertainty in each views
+            bigSigInv = np.linalg.inv(np.dot(P,np.dot(cov,P.T)))
+            covSaInv = np.linalg.inv(scalar*cov)
+            part1 = np.linalg.inv(covSaInv+np.dot(P.T,np.dot(bigSigInv,P)))
+            part2 = np.dot(covSaInv,curCap.T)+np.dot(P.T,np.dot(bigSigInv,Q)).T
+            er = np.dot(part1,part2.T).T
+        elif param['PortConstr'] == "mv":
+            er = stats.gmean(1+rets.iloc[loc-rebal:loc],axis=0)-1
+        ER[dates[loc]] = er
         
     # return dictionary setup
     ret_dict = {}

@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Sep 29 09:49:13 2020
-
 This function perform a backtest of portfolio of risky securities.
 The portfolio can be constructed in several different ways:
 (1) Equal weighting (equal)
@@ -88,11 +86,11 @@ def backTest(param, Data, if_debug):
                 # Here lambda stands for 2*lambda
                 # Long only weights
                 lambda2 = 100
-                threshold = 0.25
+                turnoverContrl = 0.25
                 P = matrix(Sig*lambda2)
                 q = matrix(-mu.T)
                 G = matrix(np.concatenate((-np.eye(nAssets), np.eye(nAssets)), axis=0))
-                h = matrix(np.concatenate((np.zeros(nAssets),threshold*np.ones(nAssets)), axis=0))
+                h = matrix(np.concatenate((np.zeros(nAssets),turnoverContrl*np.ones(nAssets)), axis=0))
                 A = matrix(np.ones((1,nAssets)))
                 b = matrix(np.ones(1))
                 wNew = portValCurrent*np.array(solvers.qp(P,q,G,h,A,b)['x']).reshape((nAssets,))
@@ -101,15 +99,14 @@ def backTest(param, Data, if_debug):
                 # cov= pca(cov)
                 # er = avg(market equal,momentum)
                 lambda2 = 100
-                threshold = 0.25
+                turnoverContrl = 0.5
                 P = matrix(Sig*lambda2)
                 q = matrix(-mu.T)
-                G = matrix(np.stack((-np.eye(nAssets), np.eye(nAssets))))
-                h = matrix(np.stack(np.zeros(nAssets),threshold*np.ones(nAssets)))
+                G = matrix(np.concatenate((-np.eye(nAssets), np.eye(nAssets)), axis=0))
+                h = matrix(np.concatenate((np.zeros(nAssets),turnoverContrl*np.ones(nAssets)), axis=0))
                 A = matrix(np.ones((1,nAssets)))
                 b = matrix(np.ones(1))
                 wNew = portValCurrent*np.array(solvers.qp(P,q,G,h,A,b)['x']).reshape((nAssets,))
-            
         else:
             # We don't need to rebalance
             wNew = wCurrent
@@ -129,7 +126,6 @@ def backTest(param, Data, if_debug):
         portRet[t]       = (portVal[t]-portVal[t-1])/portVal[t-1]
         retdates[t]      = date_t
         
-    
     # Populate output structure
     output_struct                  = {}
     output_struct['portVal']       = portVal
@@ -143,5 +139,6 @@ def backTest(param, Data, if_debug):
     output_struct['securityRet']   = securityRet
     output_struct['portRet']       = portRet
     output_struct['retdates']      = retdates    
-    output_struct['PortConstr']    = param['PortConstr']  
+    output_struct['PortConstr']    = param['PortConstr']
+    
     return output_struct

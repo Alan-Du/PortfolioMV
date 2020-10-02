@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Sep 29 12:31:08 2020
 This function generates outputs and reports 
 from a backtest created by BackTest.py.
 
@@ -13,7 +12,7 @@ import matplotlib.pyplot as plt
 from maxDrawDown import maxDrawDown as maxDrawDown
 from scipy.stats import gmean
 
-def generateReport(output_struct):
+def generateReport(output_struct, param):
     outDir      = "outPuts\\" # output directory name
     freq        = 260  # hardcoded for daily data for now
     dollarscale = output_struct['portVal'][0] # scale dollar to millions of dollars
@@ -36,7 +35,7 @@ def generateReport(output_struct):
     
     # Start plot report
     fig = plt.figure(figsize=(18,38))
-    fig.suptitle(strat+' portfolio BackTest Output', fontsize=35)
+    fig.suptitle(param['output_filename'], fontsize=35)
     gs = fig.add_gridspec(4,2)
     """  Plot one summary table of strategy
     """
@@ -141,5 +140,5 @@ def generateReport(output_struct):
     ax6.legend(loc='upper left')
     ax6.set_title('portWeights')
     #plt.tight_layout()
-    fig.savefig(outDir+strat+'BackTestDetails.png')
+    fig.savefig(outDir+param['output_filename']+'.png')
     return None
