@@ -99,7 +99,7 @@ def backTest(param, Data, if_debug):
                 # black litterman model
                 # cov= pca(cov)
                 # er = avg(market equal,momentum)
-                lambda2 = 8
+                lambda2 = 100
                 P = matrix(Sig*lambda2)
                 q = matrix(-mu.T)
                 G = matrix(-np.eye(nAssets))

@@ -27,7 +27,7 @@ import numpy as np
 from scipy import stats
 from sklearn.decomposition import PCA
 
-def readData(param):
+def readData(param, if_debug):
     # readData funtion will look
     # in the current directory of
     # fileName.xlsx file of data
@@ -90,6 +90,22 @@ def readData(param):
     ret_dict["ER"]         = ER
     ret_dict["rebaldates"] = rebaldates
     ret_dict["nAssets"]    = nAssets
+    # it is crucial to have a better expected return
+    # and cov matrix I provide a data debugging here
+    # to show the changes along time of expected
+    # returns vectors
+    if if_debug:
+        # plot expected returns series
+        print("Expected returns debug plot...")
+        er_li = []
+        for dd,vals in ER.items():
+            temp = {"Dates": dd}
+            for v,nm in zip(vals,secnames):
+                if nm not in temp:
+                    temp[nm] = v
+            er_li.append(temp)
+        df = pd.DataFrame.from_records(er_li).set_index("Dates")
+        df.plot()
     return ret_dict
 
 

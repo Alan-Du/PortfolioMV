@@ -19,17 +19,16 @@ from generateReport import generateReport
 start = time.time()
 
 # Degugging?
-if_debug = False  # turn off debugging output
-#if_debug = True  # turn on degugging output
+if_debug = False
 
 # Data
 param = {}
 param['datasource'] = 'Data'
-param['rebalFreq']  = "2M"   # rebal frequency could be nD(n days),nM(n months)
+param['rebalFreq']  = "1M"   # rebal frequency could be nD(n days),nM(n months)
 param['PortConstr'] = 'bl'
 
 # Read data here
-Data = readData(param)
+Data = readData(param,if_debug)
 
 # General backtest parameters
 param['freq']            = 260  # All data is daily, assuming 260 days in a year
