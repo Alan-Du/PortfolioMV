@@ -97,7 +97,7 @@ def generateReport(output_struct, param):
         portShp.append(rets/vol)
     # plot portval vs returns
     ax3 = fig.add_subplot(gs[2,0])
-    ax3.plot(dates, portVal, color="navy")
+    ax3.plot(dates, portShp, color="navy")
     ax3.set_xlabel("Dates",fontsize=14)
     ax3.set_ylabel("portSharpe",color="navy",fontsize=14)
     ax3.set_title('6M-Sharpe vs 6M-Vol')
